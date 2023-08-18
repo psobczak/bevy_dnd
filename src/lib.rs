@@ -71,6 +71,24 @@ fn spawn_monter(mut commands: Commands) {
         },
         Creature,
     ));
+
+    commands.spawn((
+        CharacterBundle {
+            name: "Centaru".into(),
+            abilities: Abilities {
+                strength: AbilityScore::new(18).unwrap(),
+                dexterity: AbilityScore::new(14).unwrap(),
+                constitution: AbilityScore::new(14).unwrap(),
+                intelligence: AbilityScore::new(9).unwrap(),
+                wisdom: AbilityScore::new(13).unwrap(),
+                charisma: AbilityScore::new(11).unwrap(),
+            },
+            alignement: Alignement::NeutralGood,
+            health: Health(45),
+            level: Level { level: 2, xp: 0 },
+        },
+        Creature,
+    ));
 }
 
 fn roll_for_initiative(
@@ -78,11 +96,7 @@ fn roll_for_initiative(
     mut writer: EventWriter<RollDiceEvent>,
 ) {
     for entity in &creatures {
-        writer.send(RollDiceEvent {
-            who_rolled: entity,
-            sides: 20,
-            times: 1,
-        })
+        writer.send(RollDiceEvent::Initiative(entity));
     }
 }
 

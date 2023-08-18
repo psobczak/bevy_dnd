@@ -19,10 +19,32 @@ impl Plugin for DicePlugin {
 }
 
 #[derive(Event)]
-pub struct RollDiceEvent {
-    pub who_rolled: Entity,
-    pub sides: u32,
-    pub times: u32,
+pub enum RollDiceEvent {
+    Initiative(Entity),
+}
+
+struct Roll {
+    sides: u32,
+    times: u32,
+}
+
+impl From<&RollDiceEvent> for Roll {
+    fn from(value: &RollDiceEvent) -> Self {
+        match value {
+            RollDiceEvent::Initiative(_) => Roll {
+                sides: 20,
+                times: 1,
+            },
+        }
+    }
+}
+
+impl Roll {
+    fn throws(&self, global_rng: &mut ResMut<GlobalRng>) -> Vec<u32> {
+        (0..self.times)
+            .map(|_| global_rng.u32(1..=self.sides))
+            .collect::<Vec<_>>()
+    }
 }
 
 #[derive(Event)]
@@ -34,11 +56,13 @@ fn roll_dice(
     mut writer: EventWriter<RollResultsEvent>,
 ) {
     for event in reader.iter() {
-        let throws = (0..event.times)
-            .map(|_| global_rng.u32(1..=event.sides))
-            .collect::<Vec<_>>();
+        let (entity, result) = match event {
+            RollDiceEvent::Initiative(entity) => {
+                (entity, Roll::from(event).throws(&mut global_rng))
+            }
+        };
 
-        writer.send(RollResultsEvent(event.who_rolled, throws))
+        writer.send(RollResultsEvent(*entity, result))
     }
 }
 
