@@ -8,13 +8,7 @@ impl Plugin for DicePlugin {
         app.add_plugins(RngPlugin::default())
             .add_event::<RollDiceEvent>()
             .add_event::<RollResultsEvent>()
-            .add_systems(
-                Update,
-                (
-                    roll_dice.run_if(on_event::<RollDiceEvent>()),
-                    debug_roll.run_if(on_event::<RollResultsEvent>()),
-                ),
-            );
+            .add_systems(Update, (roll_dice.run_if(on_event::<RollDiceEvent>()),));
     }
 }
 
@@ -47,7 +41,7 @@ impl Roll {
     }
 }
 
-#[derive(Event)]
+#[derive(Event, Debug)]
 pub struct RollResultsEvent(pub Entity, pub Vec<u32>);
 
 fn roll_dice(
@@ -58,16 +52,12 @@ fn roll_dice(
     for event in reader.iter() {
         let (entity, result) = match event {
             RollDiceEvent::Initiative(entity) => {
-                (entity, Roll::from(event).throws(&mut global_rng))
+                let throws = Roll::from(event).throws(&mut global_rng);
+                info!("Entity {:?} rolled for INITIATIVE: {:?}", &entity, &throws);
+                (entity, throws)
             }
         };
 
-        writer.send(RollResultsEvent(*entity, result))
-    }
-}
-
-fn debug_roll(mut reader: EventReader<RollResultsEvent>) {
-    for event in reader.iter() {
-        info!("Entity {:?} threw: {:?}", event.0, event.1)
+        writer.send(RollResultsEvent(*entity, result));
     }
 }
